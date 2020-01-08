@@ -2,11 +2,15 @@
 #https://github.com/digitalocean/doctl/issues/309
 exec > >(tee -i do_snapshot.log)
 
+# Check for root or sudo execution
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root using sudo bash dev-config.bash"
+  exit 1
+fi
+
 # Call dodroplet.config
 . dodroplet.config
 
-#DROPLETID=145251618
-#DROPLETNAME=wpawme
 # Weekday, Month, date, YEAR, 12-hour:minute timezone
 DATE=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$SNAPNAMEAPPEND"
 NAME=$DROPLETNAME"_"$DATE
@@ -44,22 +48,21 @@ echo "Please wait this may take awhile"
 echo "Powering on droplet"
 /snap/bin/doctl compute droplet-action power-on $DROPLETID --wait
 echo "We're live baby!"
+sleep 2
 
 # List snapshots and get oldest snapshots after $NUMRETAIN
-echo "Deleting the last $NUMRETAIN snapshots"
-
-# List snapshots, get oldest snapshots after 10
 SNAPSHOTS=$(/snap/bin/doctl compute image list-user --format "ID" --no-header | wc -l)
+a=$(($SNAPSHOTS - $NUMRETAIN))
+echo "Deleting the last $a snapshots"
 
-if [ "$SNAPSHOTS" -gt 9 ]; then
-	mapfile -t IDLIST < <(/snap/bin/doctl compute image list-user --format "ID" --no-header)
-
-	OLDEST=${IDLIST[0]}
-
-	/snap/bin/doctl compute image delete "$OLDEST" -f
-fi
+# Deleting all snapshots beyond $NUMRETAIN
+while [ "$SNAPSHOTS" -gt "$NUMRETAIN" ]
+	do 
+		OLDEST=$(/snap/bin/doctl compute snapshot list | grep $DROPLETID | awk '{print $1}' | head -n 1)
+		echo yes | /snap/bin/doctl compute image delete $OLDEST --force
+		SNAPSHOTS=$(/snap/bin/doctl compute snapshot list | grep $DROPLETID | awk '{print $1}' | wc -l)
+done
 sleep 1
-
 
 #Send email end program
 echo "Sending completion email to $RECIPIENTEMAIL"
