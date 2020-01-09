@@ -41,7 +41,7 @@ echo "Shutting down droplet"
 
 # Create new snapshot using $NAME
 echo "Creating snapshot titled \"$NAME\" value"
-echo "Please wait this may take awhile"
+echo "Please wait this may take awhile. About 1 minute per GB."
 /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$NAME" $DROPLETID --wait
 
 # Reboot droplet
@@ -51,16 +51,16 @@ echo "We're live baby!"
 sleep 2
 
 # List snapshots and get oldest snapshots after $NUMRETAIN
-SNAPSHOTS=$(/snap/bin/doctl compute image list-user --format "ID" --no-header | wc -l)
+SNAPSHOTS=$(/snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 a=$(($SNAPSHOTS - $NUMRETAIN))
 echo "Deleting the last $a snapshots"
 
 # Deleting all snapshots beyond $NUMRETAIN
 while [ "$SNAPSHOTS" -gt "$NUMRETAIN" ]
 	do 
-		OLDEST=$(/snap/bin/doctl compute snapshot list | grep $DROPLETID | awk '{print $1}' | head -n 1)
+		OLDEST=$(/snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$DROPLETID\|snapshot' | head -n 1)
 		echo yes | /snap/bin/doctl compute image delete $OLDEST --force
-		SNAPSHOTS=$(/snap/bin/doctl compute snapshot list | grep $DROPLETID | awk '{print $1}' | wc -l)
+		SNAPSHOTS=$(/snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 done
 sleep 1
 

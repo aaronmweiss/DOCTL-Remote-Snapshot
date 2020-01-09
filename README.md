@@ -1,7 +1,7 @@
 
 # Digital Ocean Droplet Remote Snapshot
 
-This script uses Digital Ocean's [DOCTL](https://github.com/digitalocean/doctl) command line interface to connect to a specific Droplet to take a snapshot. The script shuts the droplet down beforehand to prevent data corruption as recommended by Digital Ocean. Once complete, the droplet is returned to a powered on state. Once booted, it will retain a specified number of snapshots (including backups) associated with the Droplet's ID as indicated in the configuration file.
+This script uses Digital Ocean's [DOCTL](https://github.com/digitalocean/doctl) command line interface to connect to a specific Droplet to take a snapshot. The script shuts the droplet down beforehand to prevent data corruption as recommended by Digital Ocean. Once complete, the droplet is returned to a powered on state. Once booted, it will retain a specified number of snapshots (excluding backups) associated with the Droplet's ID as indicated in the configuration file.
 
 Learn about how I can came up with this idea: https://aaronweiss.me/automated-digital-ocean-droplet-snapshots-with-doctl
 
