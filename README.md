@@ -50,9 +50,12 @@ Consider adding this script to your crontab. Below is an example to run this scr
 As of 12/16/2019, Digital Ocean charges [$0.05/GB per month](https://www.digitalocean.com/docs/images/snapshots/). Contributors to this script are not liable for costs associated with running or maintaining a Digital Ocean account.  
 
 ## Roadmap
-~~1. Have the option to only delete snapshots within the $DROPLETID. Currently, this script will delete any image within the user's account~~ (COMPLETED)
-~~2. Find an elegant solution to allow for multiple droplets to be used separately.
-~~3. Optionally create a screenshot of a website to show that the server/site is live after the script completed.
+
+ 1. ~~Have the option to only delete snapshots within the $DROPLETID.
+    Currently, this script will delete any image within the user's
+    account~~ (COMPLETED)
+ 2. Find an elegant solution to allow for multiple droplets to be used separately.
+ 3. Optionally create a screenshot of a website to show that the server/site is live after the script completed.
 
 ## Thank yous
 This is my first open source contribution and much of this script has relied on the work of others before me. Among these are some snippets found [here](https://github.com/digitalocean/doctl/issues/309) and [here](https://askubuntu.com/questions/743493/best-way-to-read-a-config-file-in-bash). 
