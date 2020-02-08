@@ -4,8 +4,8 @@
 #set -xv
 
 ### Capture logs
-logdate=$(date +%Y%b%d)
-exec > >(tee -i auto_snapshot_log_$logdate.log)
+logdate=$(date +%Y%b%d@%H:%M)
+exec > >(tee -i auto_snapshot_$logdate.log)
 
 ### Check for root or sudo execution
 #if [ "$EUID" -ne 0 ]
@@ -76,14 +76,15 @@ sleep 2
 # List snapshots and get oldest snapshots after $NUMRETAIN
 SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 a=$(($SNAPSHOTS - $NUMRETAIN))
-echo "Deleting the last $a snapshots"
+echo "Deleting the last $a snapshot(s)"
 
 # Deleting all snapshots beyond $NUMRETAIN
 while [[ "$SNAPSHOTS" -gt "$NUMRETAIN" ]]
 	do 
 		OLDEST=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$DROPLETID\|snapshot' | awk '{print$1}' | head -n 1)
 		OLDESTNAME=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $DROPLETID | awk '{print$2}' | head -n 1)
-		echo "Deleting "$OLDESTNAME""
+		echo "Delete "$OLDESTNAME""$'\r' >> $email_notification
+		echo "Deleting "$OLDESTNAME""$'\r'
 		sudo /snap/bin/doctl compute image delete $OLDEST --force
 		SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 done
