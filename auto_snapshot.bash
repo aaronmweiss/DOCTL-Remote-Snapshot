@@ -39,7 +39,7 @@ source $scriptdir/dodroplet.config
 date=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$snap_name_append"
 dropletname=$(doctl compute droplet list | grep -e $dropletid | awk '{print$2}')
 name=$dropletname"_"$date
-#host=$(hostname)
+host=$(hostname)
 ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
 
@@ -51,7 +51,7 @@ mkdir $tmpdir
 touch $email_notification
 echo "To: $recipient_email"$'\r' >> $email_notification
 echo "From: $host <$host@$ipadd>"$'\r' >> $email_notification
-echo "Subject: $dropletname Snapshot on $dropletid Completed"$'\r' >> $email_notification
+echo "Subject: $dropletname Snapshot on "$dropletid" Completed"$'\r' >> $email_notification
 echo $'\r' >> $email_notification
 echo $'\r' >> $email_notification
 echo $'\r' >> $email_notification
@@ -78,14 +78,14 @@ sleep 2
 # List snapshots and get oldest snapshots after $numretain
 snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 a=$(($snapshots - $numretain))
-echo "Deleting the last $a snapshot(s)"
+echo "Deleting the last "$a" snapshot(s)"
 
 # Deleting all snapshots beyond $numretain
 while [[ "$snapshots" -gt "$numretain" ]]
 	do 
 		oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
 		oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
-		echo "Delete "$oldest_name""$'\r' >> $email_notification
+		echo "Deleted "$oldest_name""$'\r' >> $email_notification
 		echo "Deleting "$oldest_name""$'\r'
 		sudo /snap/bin/doctl compute image delete $oldest --force
 		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
@@ -93,8 +93,9 @@ done
 sleep 1
 
 #Send email end program
-echo "Sending completion email to $recipient_email"
-echo "Snapshot of $dropletname titled $new_snap Created $today"$'\r' >> $email_notification
+echo "Sending completion email to "$recipient_email""
+echo >> $email_notification
+echo "Snapshot of $dropletname titled "$new_snap" Created $today"$'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 # Clean up work
