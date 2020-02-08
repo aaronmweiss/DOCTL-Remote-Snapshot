@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Enable Debug
-#set -xv
+set -xv
 
 ### Capture logs
 if [ -d "/var/log/doctl-remote-snapshot" ]
@@ -43,8 +43,8 @@ source $scriptdir/dodroplet.config
 
 ### Constants
 date=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$snap_name_append"
-dropletname=$(doctl compute droplet list | grep -e $dropletid | awk '{print$2}')
-name=$dropletname"_"$date
+dropletname=$(sudo /snap/bin/doctl compute droplet list | grep -e $dropletid | awk '{print$2}')
+name="$dropletname""_""$date"
 host=$(hostname)
 ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
@@ -76,23 +76,24 @@ echo "Please wait this may take awhile. About 1 minute per GB."
 sudo /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$name" $dropletid --wait
 new_snap=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | tail -n 1 | awk '{print$2}')
 
-### Reboot droplet. While loop to test if server IP is reachable by ping, if not, powers on until live.
+### Reboot droplet.
 echo "Powering on droplet. Please wait."
 sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
 sleep 5
-while ! ping -c 1 "$snap_ip" &> /dev/null
-	do
-		echo "Droplet and Server are NOT Live. Waiting 10 seconds to test again"
-		sleep 10
-		if ping -c 1 "$snap_ip" &> /dev/null
-			then
-				echo "Droplet and Server is Live"
-				break
-			else 
-				echo "Still not live. Attempting to power on again"
-				sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
-		fi
-done
+	# While loop to test if server IP is reachable by ping, if not, powers on until live.
+	while ! ping -c 1 "$snap_ip" &> /dev/null
+		do
+			echo "Droplet and Server are NOT Live. Waiting 10 seconds to test again"
+			sleep 10
+			if ping -c 1 "$snap_ip" &> /dev/null
+				then
+					echo "Droplet and Server is Live"
+					break
+				else 
+					echo "Still not live. Attempting to power on again"
+					sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
+			fi
+	done
 
 # List snapshots and get oldest snapshots after $numretain
 snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
