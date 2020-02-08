@@ -35,12 +35,13 @@ spinner()
 scriptdir=$(dirname "$0")
 source $scriptdir/dodroplet.config
 
-### Weekday, Month, date, YEAR, 12-hour:minute timezone
-DATE=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$SNAPNAMEAPPEND"
-NAME=$DROPLETNAME"_"$DATE
-HOST=$(hostname)
-IPADD=$(hostname -I | awk '{print $1}')
-TODAY=$(date '+%A, %B %d %Y at %I:%M%p %Z')
+### Constants
+date=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$snap_name_append"
+dropletname=$(doctl compute droplet list | grep -e $dropletid | awk '{print$2}')
+name=$dropletname"_"$date
+#host=$(hostname)
+ipadd=$(hostname -I | awk '{print $1}')
+today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
 
 # Create email template
 tmpdir=tmp
@@ -48,9 +49,9 @@ email_notification=$tmpdir/email_notification.txt
 
 mkdir $tmpdir
 touch $email_notification
-echo "To: $RECIPIENTEMAIL"$'\r' >> $email_notification
-echo "From: $HOST <$HOST@$IPADD>"$'\r' >> $email_notification
-echo "Subject: $HOST Snapshot on $DROPLETID Completed"$'\r' >> $email_notification
+echo "To: $recipient_email"$'\r' >> $email_notification
+echo "From: $host <$host@$ipadd>"$'\r' >> $email_notification
+echo "Subject: $dropletname Snapshot on $dropletid Completed"$'\r' >> $email_notification
 echo $'\r' >> $email_notification
 echo $'\r' >> $email_notification
 echo $'\r' >> $email_notification
@@ -60,40 +61,41 @@ sleep 3
 
 # Shutdown droplet
 echo "Shutting down droplet"
-sudo /snap/bin/doctl compute droplet-action shutdown $DROPLETID --wait
+sudo /snap/bin/doctl compute droplet-action shutdown $dropletid --wait
 
-# Create new snapshot using $NAME
-echo "Creating snapshot titled \"$NAME\""
+# Create new snapshot using $name
+echo "Creating snapshot titled \"$name\""
 echo "Please wait this may take awhile. About 1 minute per GB."
-sudo /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$NAME" $DROPLETID --wait
+sudo /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$name" $dropletid --wait
+new_snap=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | tail -n 1 | awk '{print$2}')
 
 # Reboot droplet
 echo "Powering on droplet."
-sudo /snap/bin/doctl compute droplet-action power-on $DROPLETID --wait
+sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
 echo "Droplet is now powered-on."
 sleep 2
 
-# List snapshots and get oldest snapshots after $NUMRETAIN
-SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-a=$(($SNAPSHOTS - $NUMRETAIN))
+# List snapshots and get oldest snapshots after $numretain
+snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+a=$(($snapshots - $numretain))
 echo "Deleting the last $a snapshot(s)"
 
-# Deleting all snapshots beyond $NUMRETAIN
-while [[ "$SNAPSHOTS" -gt "$NUMRETAIN" ]]
+# Deleting all snapshots beyond $numretain
+while [[ "$snapshots" -gt "$numretain" ]]
 	do 
-		OLDEST=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$DROPLETID\|snapshot' | awk '{print$1}' | head -n 1)
-		OLDESTNAME=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $DROPLETID | awk '{print$2}' | head -n 1)
-		echo "Delete "$OLDESTNAME""$'\r' >> $email_notification
-		echo "Deleting "$OLDESTNAME""$'\r'
-		sudo /snap/bin/doctl compute image delete $OLDEST --force
-		SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+		oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
+		oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
+		echo "Delete "$oldest_name""$'\r' >> $email_notification
+		echo "Deleting "$oldest_name""$'\r'
+		sudo /snap/bin/doctl compute image delete $oldest --force
+		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 done
 sleep 1
 
 #Send email end program
-echo "Sending completion email to $RECIPIENTEMAIL"
-echo "Snapshot of $HOST Created $TODAY"$'\r' >> $email_notification
-sudo sendmail -f "$RECIPIENTEMAIL" $RECIPIENTEMAIL < $email_notification
+echo "Sending completion email to $recipient_email"
+echo "Snapshot of $dropletname titled $new_snap Created $today"$'\r' >> $email_notification
+sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 # Clean up work
 sudo rm -r $email_notification $tmpdir
