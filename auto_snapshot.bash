@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Enable Debug
-set -xv
+#set -xv
 
 ### Capture logs
 if [ -d "/var/log/doctl-remote-snapshot" ]
@@ -10,8 +10,8 @@ if [ -d "/var/log/doctl-remote-snapshot" ]
 	else	
 		sudo mkdir /var/log/doctl-remote-snapshot
 fi
-logdate=$(date +%Y%b%d@%H:%M)
-exec > >(tee -i /var/log/doctl-remote-snapshot/auto_snapshot_$logdate.log)
+logdate=$(date +%Y-%m-%d@%H:%M)
+exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
 ### Check for root or sudo execution
 #if [ "$EUID" -ne 0 ]
@@ -42,7 +42,7 @@ scriptdir=$(dirname "$0")
 source $scriptdir/dodroplet.config
 
 ### Constants
-date=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$snap_name_append"
+date=$(date '+%Y-%m-%d-%a@%H:%M-%Z')"$snap_name_append"
 dropletname=$(sudo /snap/bin/doctl compute droplet list | grep -e $dropletid | awk '{print$2}')
 name="$dropletname""_""$date"
 host=$(hostname)
@@ -52,7 +52,7 @@ snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{pr
 
 ### Create email template
 tmpdir=tmp
-email_notification=$tmpdir/email_notification.txt
+email_notification="$tmpdir"/email_notification.txt
 
 mkdir $tmpdir
 touch $email_notification
