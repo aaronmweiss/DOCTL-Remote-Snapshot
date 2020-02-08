@@ -4,6 +4,11 @@
 #set -xv
 
 ### Capture logs
+if [ -d "/var/log/doctl-remote-snapshot" ]
+	then break
+	else	
+		sudo mkdir /var/log/doctl-remote-snapshot
+fi
 logdate=$(date +%Y%b%d@%H:%M)
 exec > >(tee -i auto_snapshot_$logdate.log)
 
@@ -42,6 +47,7 @@ name=$dropletname"_"$date
 host=$(hostname)
 ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
+snap_ip=$(doctl compute droplet list | grep $dropletid | awk '{print$3}')
 
 # Create email template
 tmpdir=tmp
@@ -72,6 +78,19 @@ new_snap=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | tail -
 # Reboot droplet
 echo "Powering on droplet."
 sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
+sleep 10
+
+is_ip_live=$(ping -c1 -w3 $snap_ip | grep "1 received" | awk '{print$5}' | cut -c -8)
+received="received"
+if [ "$is_ip_live" == "$recieved" ]
+	then
+		echo "Server is live"
+	else 
+		echo "Server is not live"
+		sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
+fi
+
+
 echo "Droplet is now powered-on."
 sleep 2
 
