@@ -1,14 +1,19 @@
 #!/bin/bash
-#exec > >(tee -i do_snapshot.log)
-#set -xv   # this line will enable debug
 
-# Check for root or sudo execution
+#Enable Debug
+#set -xv
+
+### Capture logs
+logdate=$(date +%Y%b%d)
+exec > >(tee -i auto_snapshot_log_$logdate.log)
+
+### Check for root or sudo execution
 #if [ "$EUID" -ne 0 ]
 #  then echo "Please run as root using sudo bash dev-config.bash"
 #  exit 1
 #fi
 
-# Spinner
+### Spinner
 # http://fitnr.com/showing-a-bash-spinner.html
 spinner()
 {
@@ -26,11 +31,11 @@ spinner()
 }
 #& spinner $!
 
-# Call dodroplet.config
+### Call dodroplet.config
 scriptdir=$(dirname "$0")
 source $scriptdir/dodroplet.config
 
-# Weekday, Month, date, YEAR, 12-hour:minute timezone
+### Weekday, Month, date, YEAR, 12-hour:minute timezone
 DATE=$(date '+%a-%b-%d-%Y@%H:%M-%Z')"$SNAPNAMEAPPEND"
 NAME=$DROPLETNAME"_"$DATE
 HOST=$(hostname)
