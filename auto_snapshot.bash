@@ -5,12 +5,13 @@
 
 ### Capture logs
 if [ -d "/var/log/doctl-remote-snapshot" ]
-	then break
+	then 
+		:
 	else	
 		sudo mkdir /var/log/doctl-remote-snapshot
 fi
 logdate=$(date +%Y%b%d@%H:%M)
-exec > >(tee -i auto_snapshot_$logdate.log)
+exec > >(tee -i /var/log/doctl-remote-snapshot/auto_snapshot_$logdate.log)
 
 ### Check for root or sudo execution
 #if [ "$EUID" -ne 0 ]
@@ -47,9 +48,9 @@ name=$dropletname"_"$date
 host=$(hostname)
 ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
-snap_ip=$(doctl compute droplet list | grep $dropletid | awk '{print$3}')
+snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{print$3}')
 
-# Create email template
+### Create email template
 tmpdir=tmp
 email_notification=$tmpdir/email_notification.txt
 
@@ -65,34 +66,33 @@ echo $'\r' >> $email_notification
 echo "Starting script"
 sleep 3
 
-# Shutdown droplet
+### Shutdown droplet
 echo "Shutting down droplet"
 sudo /snap/bin/doctl compute droplet-action shutdown $dropletid --wait
 
-# Create new snapshot using $name
+### Create new snapshot using $name
 echo "Creating snapshot titled \"$name\""
 echo "Please wait this may take awhile. About 1 minute per GB."
 sudo /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$name" $dropletid --wait
 new_snap=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | tail -n 1 | awk '{print$2}')
 
-# Reboot droplet
-echo "Powering on droplet."
+### Reboot droplet. While loop to test if server IP is reachable by ping, if not, powers on until live.
+echo "Powering on droplet. Please wait."
 sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
-sleep 10
-
-is_ip_live=$(ping -c1 -w3 $snap_ip | grep "1 received" | awk '{print$5}' | cut -c -8)
-received="received"
-if [ "$is_ip_live" == "$recieved" ]
-	then
-		echo "Server is live"
-	else 
-		echo "Server is not live"
-		sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
-fi
-
-
-echo "Droplet is now powered-on."
-sleep 2
+sleep 5
+while ! ping -c 1 "$snap_ip" &> /dev/null
+	do
+		echo "Droplet and Server are NOT Live. Waiting 10 seconds to test again"
+		sleep 10
+		if ping -c 1 "$snap_ip" &> /dev/null
+			then
+				echo "Droplet and Server is Live"
+				break
+			else 
+				echo "Still not live. Attempting to power on again"
+				sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
+		fi
+done
 
 # List snapshots and get oldest snapshots after $numretain
 snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
@@ -115,6 +115,7 @@ sleep 1
 echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
 echo "Snapshot of $dropletname titled "$new_snap" Created $today"$'\r' >> $email_notification
+echo "Server was confirmed to be UP"$'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 # Clean up work
