@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Enable Debug
+### Enable Debug
 #set -xv
 
 ### Capture logs
@@ -47,11 +47,11 @@ dropletname=$(sudo /snap/bin/doctl compute droplet list | grep -e $dropletid | a
 name="$dropletname""_""$date"
 host=$(hostname)
 ipadd=$(hostname -I | awk '{print $1}')
-today=$(date '+%A, %B %d %Y at %I:%M%p %Z')
+today=$(date '+%A, %B %d, %Y at %I:%M%p %Z')
 snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{print$3}')
 
 ### Create email template
-tmpdir=tmp
+tmpdir=$(sudo mktemp -d -t doctl-remote-snapshot-$(date +%Y-%m-%d@%H:%M)-XXXXXXXXXX)
 email_notification="$tmpdir"/email_notification.txt
 
 mkdir $tmpdir
@@ -95,40 +95,40 @@ sleep 5
 			fi
 	done
 
-# List snapshots and get oldest snapshots after $numretain
-snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-a=$(($snapshots - $numretain))
-echo "Deleting the last "$a" snapshot(s)"
 
 ### Retention
-# Skip retention if -r flag used
-while getopts r option
-	do
-	case "${option}"
-		in
-		r) break;;
-	esac
-	
-	# Deleting all snapshots beyond $NUMRETAIN
-	while [[ "$SNAPSHOTS" -gt "$NUMRETAIN" ]]
-		do 
-			OLDEST=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$DROPLETID\|snapshot' | awk '{print$1}' | head -n 1)
-			OLDESTNAME=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $DROPLETID | awk '{print$2}' | head -n 1)
-			echo "Deleting "$OLDESTNAME""
-			sudo /snap/bin/doctl compute image delete $OLDEST --force  & spinner $!
-			SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-	done
-	sleep 1
-done
+if [ "$1" == "-r" ]
+	then
+		echo "Nothing will be deleted." 
+		echo "Nothing has been deleted." $'\r' >> $email_notification
+	else
+		# List snapshots and get oldest snapshots after $numretain
+		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+		a=$(($snapshots - $numretain))
+		echo "Deleting the last "$a" snapshot(s)"
 
-#Send email end program
+		# Deleting all snapshots beyond $numretain
+		while [[ "$snapshots" -gt "$numretain" ]]
+			do 
+				oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
+				oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
+				echo "Deleted "$oldest_name""$'\r' >> $email_notification
+				echo "Deleting "$oldest_name""$'\r'
+				sudo /snap/bin/doctl compute image delete $oldest --force
+				snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+		done
+		sleep 1
+fi
+
+
+### Send email end program
 echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
-echo "Snapshot of "$dropletname" titled "\"$new_snap\"" Created $today"$'\r' >> $email_notification
+echo "Snapshot of "$dropletname" titled "\"$new_snap\"" created $today"$'\r' >> $email_notification
 echo "Server was confirmed to be UP"$'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
-# Clean up work
+### Clean up work
 sudo rm -r $email_notification $tmpdir
 
 echo "Snapshot Process Completed"
