@@ -100,22 +100,31 @@ snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no
 a=$(($snapshots - $numretain))
 echo "Deleting the last "$a" snapshot(s)"
 
-# Deleting all snapshots beyond $numretain
-while [[ "$snapshots" -gt "$numretain" ]]
-	do 
-		oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
-		oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
-		echo "Deleted "$oldest_name""$'\r' >> $email_notification
-		echo "Deleting "$oldest_name""$'\r'
-		sudo /snap/bin/doctl compute image delete $oldest --force
-		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+### Retention
+# Skip retention if -r flag used
+while getopts r option
+	do
+	case "${option}"
+		in
+		r) break;;
+	esac
+	
+	# Deleting all snapshots beyond $NUMRETAIN
+	while [[ "$SNAPSHOTS" -gt "$NUMRETAIN" ]]
+		do 
+			OLDEST=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$DROPLETID\|snapshot' | awk '{print$1}' | head -n 1)
+			OLDESTNAME=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $DROPLETID | awk '{print$2}' | head -n 1)
+			echo "Deleting "$OLDESTNAME""
+			sudo /snap/bin/doctl compute image delete $OLDEST --force  & spinner $!
+			SNAPSHOTS=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+	done
+	sleep 1
 done
-sleep 1
 
 #Send email end program
 echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
-echo "Snapshot of "$dropletname" titled "$new_snap" Created $today"$'\r' >> $email_notification
+echo "Snapshot of "$dropletname" titled "\"$new_snap\"" Created $today"$'\r' >> $email_notification
 echo "Server was confirmed to be UP"$'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
