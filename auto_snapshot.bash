@@ -120,7 +120,6 @@ if [ "$1" == "-r" ]
 		sleep 1
 fi
 
-
 ### Send email end program
 echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
