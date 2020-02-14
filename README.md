@@ -76,7 +76,7 @@ https://www.digitalocean.com/community/tutorials/how-to-use-doctl-the-official-d
 
 ## Change log
 
-### February XXth, 2020
+### February 14th, 2020
 - Added -r flag to cancel retention
 - Added test for droplet to be live based on IP before proceeding
 - Improved email notification
