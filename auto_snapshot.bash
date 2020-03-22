@@ -1,7 +1,9 @@
 #!/bin/bash
-
+#test
 ### Enable Debug
-#set -xv
+set -xv
+logdate=$(date +%Y-%m-%d@%H:%M)
+exec > >(tee -i "$logdate".log)
 
 ### Capture logs
 if [ -d "/var/log/doctl-remote-snapshot" ]
@@ -67,8 +69,14 @@ echo "Starting script"
 sleep 3
 
 ### Shutdown droplet
-echo "Shutting down droplet"
-sudo /snap/bin/doctl compute droplet-action shutdown $dropletid --wait
+if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
+	then
+		echo "Droplet was not powered off because power-off flag was used." 
+		echo "Droplet was not powered off because power-off flag was used." $'\r' >> $email_notification
+	else
+		echo "Shutting down droplet"
+		sudo /snap/bin/doctl compute droplet-action shutdown $dropletid --wait
+fi
 
 ### Create new snapshot using $name
 echo "Creating snapshot titled \"$name\""
@@ -77,27 +85,31 @@ sudo /snap/bin/doctl compute droplet-action snapshot --snapshot-name "$name" $dr
 new_snap=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | tail -n 1 | awk '{print$2}')
 
 ### Reboot droplet.
-echo "Powering on droplet. Please wait."
-sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
-sleep 5
-	# While loop to test if server IP is reachable by ping, if not, powers on until live.
-	while ! ping -c 1 "$snap_ip" &> /dev/null
-		do
-			echo "Droplet and Server are NOT Live. Waiting 10 seconds to test again"
-			sleep 10
-			if ping -c 1 "$snap_ip" &> /dev/null
-				then
-					echo "Droplet and Server is Live"
-					break
-				else 
-					echo "Still not live. Attempting to power on again"
-					sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
-			fi
-	done
-
+if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
+	then
+		echo "Skipping Reboot"
+	else
+		echo "Powering on droplet. Please wait."
+		sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
+		sleep 5
+			# While loop to test if server IP is reachable by ping, if not, powers on until live.
+			while ! ping -c 1 "$snap_ip" &> /dev/null
+				do
+					echo "Droplet and Server are NOT Live. Waiting 10 seconds to test again"
+					sleep 10
+					if ping -c 1 "$snap_ip" &> /dev/null
+						then
+							echo "Droplet and Server is Live"
+							break
+						else 
+							echo "Still not live. Attempting to power on again"
+							sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
+					fi
+			done
+fi
 
 ### Retention
-if [ "$1" == "-r" ]
+if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
 	then
 		echo "Nothing will be deleted." 
 		echo "Nothing has been deleted." $'\r' >> $email_notification
