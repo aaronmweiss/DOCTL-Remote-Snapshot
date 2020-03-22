@@ -15,11 +15,13 @@ fi
 logdate=$(date +%Y-%m-%d@%H:%M)
 exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
+
 ### Check for root or sudo execution
 #if [ "$EUID" -ne 0 ]
 #  then echo "Please run as root using sudo bash dev-config.bash"
 #  exit 1
 #fi
+
 
 ### Spinner
 # http://fitnr.com/showing-a-bash-spinner.html
@@ -52,6 +54,16 @@ ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d, %Y at %I:%M%p %Z')
 snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{print$3}')
 
+
+# Log Archive
+if [ -d "$log_archive_dir" ]
+	then 
+		:
+	else	
+		sudo mkdir $log_archive_dir
+fi
+exec > >(tee -i $log_archive_dir/"$logdate".log)
+log_file=$log_archive_dir/"$logdate".log
 
 ## $numretain validation
 if [ "$numretain " -lt 1 ]
@@ -152,6 +164,7 @@ echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
 echo "Snapshot of "$dropletname" titled "\"$new_snap\"" created $today"$'\r' >> $email_notification
 echo "Server was confirmed to be UP"$'\r' >> $email_notification
+echo "Log file: $log_file"'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 ### Clean up work
