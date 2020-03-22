@@ -52,6 +52,15 @@ ipadd=$(hostname -I | awk '{print $1}')
 today=$(date '+%A, %B %d, %Y at %I:%M%p %Z')
 snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{print$3}')
 
+
+## $numretain validation
+if [ "$numretain " -lt 1 ]
+	then 
+		echo "Please assign a value greater than "0" to \$numretain"
+		exit 1;
+fi
+
+
 ### Create email template
 tmpdir=$(sudo mktemp -d -t doctl-remote-snapshot-$(date +%Y-%m-%d@%H:%M)-XXXXXXXXXX)
 email_notification="$tmpdir"/email_notification.txt
@@ -116,20 +125,26 @@ if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
 	else
 		# List snapshots and get oldest snapshots after $numretain
 		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-		a=$(($snapshots - $numretain))
-		echo "Deleting the last "$a" snapshot(s)"
+		if [ "$snapshots" -lt "$numretain" ]
+			then	
+				echo "Skipping retention because \$numretain is greater than \$snapshot."
+				echo "Skipped retention because \$numretain is greater than \$snapshot."$'\r' >> $email_notification
+			else
+				a=$(($snapshots - $numretain))
+				echo "Deleting the last "$a" snapshot(s)"
 
-		# Deleting all snapshots beyond $numretain
-		while [[ "$snapshots" -gt "$numretain" ]]
-			do 
-				oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
-				oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
-				echo "Deleted "$oldest_name""$'\r' >> $email_notification
-				echo "Deleting "$oldest_name""$'\r'
-				sudo /snap/bin/doctl compute image delete $oldest --force
-				snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-		done
+				# Deleting all snapshots beyond $numretain
+				while [[ "$snapshots" -gt "$numretain" ]]
+					do 
+						oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
+						oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
+						echo "Deleted "$oldest_name""$'\r' >> $email_notification
+						echo "Deleting "$oldest_name""$'\r'
+						sudo /snap/bin/doctl compute image delete $oldest --force
+						snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+				done
 		sleep 1
+		fi
 fi
 
 ### Send email end program
