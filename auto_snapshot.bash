@@ -164,7 +164,7 @@ echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
 echo "Snapshot of "$dropletname" titled "\"$new_snap\"" created $today"$'\r' >> $email_notification
 echo "Server was confirmed to be UP"$'\r' >> $email_notification
-echo "Log file: $log_file"'\r' >> $email_notification
+echo "Log file: $log_file"$'\r' >> $email_notification
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 ### Clean up work
