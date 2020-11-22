@@ -72,7 +72,7 @@ log_file=$log_archive_dir/"$logdate".log
 ## $numretain validation
 if [ "$numretain " -lt 1 ]
 	then 
-		echo "Please assign a value greater than "0" to \$numretain"
+		echo "Please assign a value greater than "0" to \$numretain";
 		exit 1;
 fi
 
@@ -94,7 +94,7 @@ echo "Starting script"
 sleep 3
 
 ### Shutdown droplet
-if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
+if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$3" == "p" ]
 	then
 		echo "Droplet was not powered off because power-off flag was used." 
 		echo "The droplet was not powered off because power-off flag was used." $'\r' >> $email_notification
