@@ -170,8 +170,9 @@ echo "Snapshot of "$dropletname" titled "\"$new_snap\"" was created on $today"$'
 echo "Server was confirmed to be live. "$'\r' >> $email_notification
 echo "Log file can be found here: $log_file"$'\r' >> $email_notification
 droplet_heading=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | grep name)
-remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | grep name)
+remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid)
 echo -e "Remaining Snapshots for this Droplet:\n" $remaining_snapshots >> $email_notification
+echo "$remaining_snapshots" | wc -l >> $email_notification
 #echo $droplet_heading >> $email_notification
 #echo $remaining_snapshots >> $email_notification
 
