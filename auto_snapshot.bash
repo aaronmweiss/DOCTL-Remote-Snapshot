@@ -2,10 +2,14 @@
 #test
 ### Enable Debug
 set -xv
-logdate=$(date +%Y-%m-%d@%H:%M)
-exec > >(tee -i "$logdate".log)
 
 ### Capture logs
+logdate=$(date +%Y-%m-%d@%H:%M)
+
+# Debug log
+#exec > >(tee -i "$logdate".log)
+
+# Primary Log
 if [ -d "/var/log/doctl-remote-snapshot" ]
 	then 
 		:
@@ -83,7 +87,7 @@ echo "To: $recipient_email"$'\r' >> $email_notification
 echo "From: $host <$host@$ipadd>"$'\r' >> $email_notification
 echo "Subject: Snapshot on "$dropletname" Completed"$'\r' >> $email_notification
 echo $'\r' >> $email_notification
-echo $'\r' >> $email_notification
+echo "A remote snapshot job has been initated. Below is a brief log of that job."$'\r' >> $email_notification
 echo $'\r' >> $email_notification
 
 echo "Starting script"
@@ -93,7 +97,7 @@ sleep 3
 if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
 	then
 		echo "Droplet was not powered off because power-off flag was used." 
-		echo "Droplet was not powered off because power-off flag was used." $'\r' >> $email_notification
+		echo "The droplet was not powered off because power-off flag was used." $'\r' >> $email_notification
 	else
 		echo "Shutting down droplet"
 		sudo /snap/bin/doctl compute droplet-action shutdown $dropletid --wait
@@ -162,9 +166,15 @@ fi
 ### Send email end program
 echo "Sending completion email to "$recipient_email""
 echo >> $email_notification
-echo "Snapshot of "$dropletname" titled "\"$new_snap\"" created $today"$'\r' >> $email_notification
-echo "Server was confirmed to be UP"$'\r' >> $email_notification
-echo "Log file: $log_file"$'\r' >> $email_notification
+echo "Snapshot of "$dropletname" titled "\"$new_snap\"" was created on $today"$'\r' >> $email_notification
+echo "Server was confirmed to be live. "$'\r' >> $email_notification
+echo "Log file can be found here: $log_file"$'\r' >> $email_notification
+droplet_heading=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | grep name)
+remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | grep name)
+echo -e "Remaining Snapshots for this Droplet:\n" $remaining_snapshots >> $email_notification
+#echo $droplet_heading >> $email_notification
+#echo $remaining_snapshots >> $email_notification
+
 sudo sendmail -f "$recipient_email" $recipient_email < $email_notification
 
 ### Clean up work
