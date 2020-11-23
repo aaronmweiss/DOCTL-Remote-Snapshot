@@ -1,7 +1,7 @@
 #!/bin/bash
 #test
 ### Enable Debug
-set -xv
+#set -xv
 
 ### Capture logs
 logdate=$(date +%Y-%m-%d@%H:%M)
@@ -145,22 +145,23 @@ if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
 			then	
 				echo "Skipping retention because \$numretain is greater than \$snapshot."
 				echo "Skipped retention because \$numretain is greater than \$snapshot."$'\r' >> $email_notification
-			else
-				a=$(($snapshots - $numretain))
-				echo "Deleting the last "$a" snapshot(s)"
+			elif [ "$a" > 0 ]
+				then
+					a=$(($snapshots - $numretain))
+						echo "Deleting the last "$a" snapshot(s)"
 
-				# Deleting all snapshots beyond $numretain
-				while [[ "$snapshots" -gt "$numretain" ]]
-					do 
-						oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
-						oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
-						echo "Deleted "$oldest_name""$'\r' >> $email_notification
-						echo "Deleting "$oldest_name""$'\r'
-						sudo /snap/bin/doctl compute image delete $oldest --force
-						snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-				done
+						# Deleting all snapshots beyond $numretain
+						while [[ "$snapshots" -gt "$numretain" ]]
+							do
+								oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
+								oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
+								echo "Deleted "$oldest_name""$'\r' >> $email_notification
+								echo "Deleting "$oldest_name""$'\r'
+								sudo /snap/bin/doctl compute image delete $oldest --force
+								snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
+						done
+			fi
 		sleep 1
-		fi
 fi
 
 ### Send email end program
