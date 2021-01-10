@@ -1,7 +1,7 @@
 #!/bin/bash
 #test
 ### Enable Debug
-set -xv
+#set -xv
 
 ### Capture logs
 logdate=$(date +%Y-%m-%d@%H:%M)
