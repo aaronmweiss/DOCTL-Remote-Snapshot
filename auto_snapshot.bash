@@ -1,7 +1,7 @@
 #!/bin/bash
 #test
 ### Enable Debug
-#set -xv
+set -xv
 
 ### Capture logs
 logdate=$(date +%Y-%m-%d@%H:%M)
@@ -11,12 +11,11 @@ logdate=$(date +%Y-%m-%d@%H:%M)
 
 # Primary Log
 if [ -d "/var/log/doctl-remote-snapshot" ]
-	then 
+	then
 		:
-	else	
+	else
 		sudo mkdir /var/log/doctl-remote-snapshot
 fi
-logdate=$(date +%Y-%m-%d@%H:%M)
 exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
 
@@ -29,20 +28,20 @@ exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
 ### Spinner
 # http://fitnr.com/showing-a-bash-spinner.html
-spinner()
-{
-    local pid=$1
-    local delay=0.3
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+#spinner()
+#{
+#    local pid=$1
+#    local delay=0.3
+#    local spinstr='|/-\'
+#    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+#        local temp=${spinstr#?}
+#        printf " [%c]  " "$spinstr"
+#        local spinstr=$temp${spinstr%"$temp"}
+#        sleep $delay
+#        printf "\b\b\b\b\b\b"
+#    done
+#    printf "    \b\b\b\b"
+#}
 #& spinner $!
 
 ### Call dodroplet.config
@@ -61,9 +60,9 @@ snap_ip=$(sudo /snap/bin/doctl compute droplet list | grep $dropletid | awk '{pr
 
 # Log Archive
 if [ -d "$log_archive_dir" ]
-	then 
+	then
 		:
-	else	
+	else
 		sudo mkdir $log_archive_dir
 fi
 exec > >(tee -i $log_archive_dir/"$logdate".log)
@@ -128,7 +127,7 @@ if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
 							break
 						else 
 							echo "Still not live. Attempting to power on again"
-							sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait  				
+							sudo /snap/bin/doctl compute droplet-action power-on $dropletid --wait
 					fi
 			done
 fi
@@ -137,13 +136,13 @@ fi
 a=$(($snapshots - $numretain))
 if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
 	then
-		echo "Nothing will be deleted." 
+		echo "Nothing will be deleted."
 		echo "Nothing has been deleted." $'\r' >> $email_notification
 	else
 		# List snapshots and get oldest snapshots after $numretain
 		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
 		if [ "$snapshots" -lt "$numretain" ]
-			then	
+			then
 				echo "Skipping retention because \$numretain is greater than \$snapshot."
 				echo "Skipped retention because \$numretain is greater than \$snapshot."$'\r' >> $email_notification
 			elif [ "$a" > 0 ]
