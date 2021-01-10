@@ -134,6 +134,7 @@ if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
 fi
 
 ### Retention
+a=$(($snapshots - $numretain))
 if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
 	then
 		echo "Nothing will be deleted." 
@@ -171,7 +172,8 @@ echo "Snapshot of "$dropletname" titled "\"$new_snap\"" was created on $today"$'
 echo "Server was confirmed to be live. "$'\r' >> $email_notification
 echo "Log file can be found here: $log_file"$'\r' >> $email_notification
 droplet_heading=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | grep name)
-remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid)
+#remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid)
+remaining_snapshots=$(sudo /snap/bin/doctl compute droplet snapshots $dropletid | tail -n +2 | wc | awk {'print$1'})
 echo -e "Remaining Snapshots for this Droplet:\n" $remaining_snapshots >> $email_notification
 echo "$remaining_snapshots" | wc -l >> $email_notification
 #echo $droplet_heading >> $email_notification
