@@ -52,7 +52,7 @@ snap_name_append="_cron_snapshot"
 ### Execution
 `sudo bash auto_snapshot.bash`
 
-#### Flags
+### Flags
 -r - Cancel any retention. No snapshots will be deleted.
 	Example:
 	`sudo bash auto_snapshot.bash -r `
