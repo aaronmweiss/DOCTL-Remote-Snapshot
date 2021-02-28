@@ -32,7 +32,7 @@ Learn about how I can came up with this idea: https://aaronweiss.me/automated-di
 ### Configuration
 Add the following information to your do_droplet.config file
 ```
-droplet=
+dropletid=
 
 # Enter the number of snapshots to keep
 numretain=
