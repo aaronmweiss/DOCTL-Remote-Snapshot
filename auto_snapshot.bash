@@ -1,5 +1,5 @@
 #!/bin/bash
-#test
+
 ### Enable Debug
 #set -xv
 
@@ -14,7 +14,7 @@ if [ -d "/var/log/doctl-remote-snapshot" ]
 	then
 		:
 	else
-		sudo mkdir /var/log/doctl-remote-snapshot
+		sudo mkdir -p /var/log/doctl-remote-snapshot
 fi
 exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
@@ -132,36 +132,44 @@ if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$2" == "p" ]
 			done
 fi
 
+snapshots()
+{
+        snapshots=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | wc -l)
+}
+
+#snapshots=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | wc -l)
+snapshots
 ### Retention
 a=$(($snapshots - $numretain))
 if [ "$1" == "-r" ] || [ "$1" == "r" ] || [ "$2" == "-r" ] || [ "$2" == "r" ]
-	then
-		echo "Nothing will be deleted."
-		echo "Nothing has been deleted." $'\r' >> $email_notification
-	else
-		# List snapshots and get oldest snapshots after $numretain
-		snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-		if [ "$snapshots" -lt "$numretain" ]
-			then
-				echo "Skipping retention because \$numretain is greater than \$snapshot."
-				echo "Skipped retention because \$numretain is greater than \$snapshot."$'\r' >> $email_notification
-			elif [ "$a" > 0 ]
-				then
-					a=$(($snapshots - $numretain))
-						echo "Deleting the last "$a" snapshot(s)"
+        then
+                echo "Nothing will be deleted."
+                echo "Nothing has been deleted." $'\r' >> $email_notification
+        else
+                # List snapshots and get oldest snapshots after $numretain
+                #snapshots=$(sudo /snap/bin/doctl compute snapshot list | grep $dropletid | wc -l)
+                snapshots
+                if [ "$snapshots" -lt "$numretain" ]
+                        then
+                                echo "Skipping retention because \$numretain is greater than \$snapshot."
+                                echo "Skipped retention because \$numretain is greater than \$snapshot."$'\r' >> $email_notification
+                        elif [ "$a" > 0 ]
+                                then
+                                        a=$(($snapshots - $numretain))
+                                                echo "Deleting the last "$a" snapshot(s)"
 
-						# Deleting all snapshots beyond $numretain
-						while [[ "$snapshots" -gt "$numretain" ]]
-							do
-								oldest=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep -e '$dropletid\|snapshot' | awk '{print$1}' | head -n 1)
-								oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
-								echo "Deleted "$oldest_name""$'\r' >> $email_notification
-								echo "Deleting "$oldest_name""$'\r'
-								sudo /snap/bin/doctl compute image delete $oldest --force
-								snapshots=$(sudo /snap/bin/doctl compute image list-user --format "ID,Type" --no-header | grep snapshot | wc -l)
-						done
-			fi
-		sleep 1
+                                                # Deleting all snapshots beyond $numretain
+                                                while [[ "$snapshots" -gt "$numretain" ]]
+                                                        do
+                                                                oldest=$(sudo /snap/bin/doctl compute snapshot list | grep -e "$dropletid" | awk '{print$1}' | head -n 1)
+                                                                oldest_name=$(sudo /snap/bin/doctl compute snapshot list --format "ID,Name,ResourceId" | grep $dropletid | awk '{print$2}' | head -n 1)
+                                                                echo "Deleted "$oldest_name""$'\r' >> $email_notification
+                                                                echo "Deleting "$oldest_name""$'\r'
+                                                                sudo /snap/bin/doctl compute image delete $oldest --force
+                                                                snapshots
+                                                done
+                        fi
+                sleep 1
 fi
 
 ### Send email end program
