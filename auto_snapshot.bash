@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#test
 ### Enable Debug
 #set -xv
 
@@ -14,7 +14,7 @@ if [ -d "/var/log/doctl-remote-snapshot" ]
 	then
 		:
 	else
-		sudo mkdir -p /var/log/doctl-remote-snapshot
+		sudo mkdir /var/log/doctl-remote-snapshot
 fi
 exec > >(tee -i /var/log/doctl-remote-snapshot/"$logdate".log)
 
@@ -93,7 +93,7 @@ echo "Starting script"
 sleep 3
 
 ### Shutdown droplet
-if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$3" == "p" ]
+if [ "$1" == "-p" ] || [ "$1" == "p" ] || [ "$2" == "-p" ] || [ "$3" == "p" ] 
 	then
 		echo "Droplet was not powered off because power-off flag was used." 
 		echo "The droplet was not powered off because power-off flag was used." $'\r' >> $email_notification
