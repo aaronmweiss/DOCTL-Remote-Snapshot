@@ -54,13 +54,19 @@ snap_name_append="_cron_snapshot"
 
 ### Flags
 -r - Cancel any retention. No snapshots will be deleted.
+
 	Example:
+
 	`sudo bash auto_snapshot.bash -r `
+
 -p - Prevent the script from powering the droplet off.
+
 	Example:
+
 	`sudo bash auto_snapshot.bash -p`
 
 Combining flags:
+
 	`sudo bash auto_snapshot.bash -p -r`
 
 #### Cron
