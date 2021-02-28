@@ -1,3 +1,4 @@
+
 # Digital Ocean Droplet Remote Snapshot
 
 This script uses Digital Ocean's [DOCTL](https://github.com/digitalocean/doctl) command line interface to connect to a specific Droplet to take a snapshot. The script shuts the droplet down beforehand to prevent data corruption as recommended by Digital Ocean. Once complete, the droplet is returned to a powered on state. Once booted, it will retain a specified number of snapshots (excluding backups) associated with the Droplet's ID as indicated in the configuration file.
@@ -5,17 +6,17 @@ This script uses Digital Ocean's [DOCTL](https://github.com/digitalocean/doctl) 
 Learn about how I can came up with this idea: https://aaronweiss.me/automated-digital-ocean-droplet-snapshots-with-doctl
 
 ## Table of Contents
-- [Requirements] (#requirements)
-- [Optional] (#optional)
-- [Installation] (#installation)
-- [Usage] (#usage)
-	* [Configuration] (#configuration)
-	* [Execution] (#execution)
-	* [Cron] (#cron)
-- [Notice] (#notice)
-- [Roadmap] (#roadmap)
-- [Thank Yous] (#thank-yous)
-- [Change Log] (#change-log)
+- [Requirements](#requirements)
+- [Optional](#optional)
+- [Installation](#installation)
+- [Usage](#usage)
+	* [Configuration](#configuration)
+	* [Execution](#execution)
+	* [Cron](#cron)
+- [Notice](#notice)
+- [Roadmap](#roadmap)
+- [Thank Yous](#thank-yous)
+- [Change Log](#change-log)
 
 ## Requirements
 - [doctl](https://github.com/digitalocean/doctl#installing-doctl)
@@ -29,30 +30,38 @@ Learn about how I can came up with this idea: https://aaronweiss.me/automated-di
 ## Usage
 
 ### Configuration
-Please add the following information to your do_droplet.config file
+Add the following information to your do_droplet.config file
 ```
-DROPLETID=
+droplet=
 
 # Enter the number of snapshots to keep
-NUMRETAIN=
+numretain=
 
 #Have a notification send to an email
-RECIPIENTEMAIL=your@email.account
+recipientemail=your@email.account
 
 #Optional
 #Append an additional note at end of snapshot name. Currently, it's set to "_cron_snapshot"
-SNAPNAMEAPPEND="_cron_snapshot"
+snap_name_append="_cron_snapshot"
 ```
 
-DROPLETID is your Droplet's ID. If you do not know your Droplet's ID, log into your [Digital Ocean account ](https://cloud.digitalocean.com/droplets), click on the droplet, and the URL of your droplet will contain your Droplet's ID after the /droplets/ directory, like so: https://cloud.digitalocean.com/droplets/**XXXXXXXXX**/graphs?i=78109b&period=hour
+`dropletid` is your Droplet's ID. If you do not know your Droplet's ID, log into your [Digital Ocean account ](https://cloud.digitalocean.com/droplets), click on the droplet, and the URL of your droplet will contain your Droplet's ID after the /droplets/ directory, like so: https://cloud.digitalocean.com/droplets/**XXXXXXXXX**/graphs?i=78109b&period=hour
 
-NUMRETAIN is the amount of snapshots you'd like to keep. 
+`numretain` is the amount of snapshots you'd like to keep. 
 
 ### Execution
 `sudo bash auto_snapshot.bash`
 
 #### Flags
 -r - Cancel any retention. No snapshots will be deleted.
+	Example:
+	`sudo bash auto_snapshot.bash -r `
+-p - Prevent the script from powering the droplet off.
+	Example:
+	`sudo bash auto_snapshot.bash -p`
+
+Combining flags:
+	`sudo bash auto_snapshot.bash -p -r`
 
 #### Cron
 Consider adding this script to your crontab. Below is an example to run this script every Wednesday at 1 AM
@@ -76,13 +85,18 @@ https://www.digitalocean.com/community/tutorials/how-to-use-doctl-the-official-d
 
 ## Change log
 
+### February 27, 2021
+- Corrected retention issue
+- Added -p flag to cancel power-off
+- Added functions where necessary for brevity
+
 ### February 14th, 2020
 - Added -r flag to cancel retention
 - Added test for droplet to be live based on IP before proceeding
 - Improved email notification
 -- Including snapshot name created
 -- Including snapshot names deleted
-- Changed log directory to var/log/doctl-auto-snapshot
+- Changed log directory to /var/log/doctl-auto-snapshot
 - Changed log filename format
 - Removed dropletname variable from dodroplet.config in favor of using droplet's real name
 
@@ -96,3 +110,4 @@ https://www.digitalocean.com/community/tutorials/how-to-use-doctl-the-official-d
 - Ability to delete snapshots associated with the specific Droplet ID up to the amount assigned in the RETAIN variable assigned in dodroplet.config
 - Require sudo execution
 - Changed the user to $USER
+
